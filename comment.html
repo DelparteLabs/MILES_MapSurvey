@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+  
+  <meta name="viewport" content="initial-scale=1, maximum-scale=1,user-scalable=no">
+  <title>Portneuf River Revisioning Comments</title>
+
+  <link rel="stylesheet" href="https://js.arcgis.com/3.15/dijit/themes/claro/claro.css">
+  <link rel="stylesheet" href="https://js.arcgis.com/3.15/esri/css/esri.css">
+  <link rel="stylesheet" href="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css">
+
+<!--  <link rel="canonical" href="http://www.alessioatzeni.com/wp-content/tutorials/jquery/simple-tooltip/index.html" />-->
+
+  <style>
+    html, body {
+      height: 97%;
+      width: 98%;
+      margin: 1%;
+      
+    }
+
+    #rightPane {
+      width: 37%;
+    }
+
+    #layerPane {
+      border: solid #97DCF2 1px;
+    }
+    #BasemapToggle {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      z-index: 50;
+    }
+    select{
+        font-size: 16px;     
+    }
+    textarea {
+        font-size: 12px;     
+    }
+   .popover{
+    width:450px;
+    height:250px;
+    }
+   .tooltip-inner {
+     white-space:pre-wrap;
+     text-align:left;
+     }
+   .toolTipDetails {
+    width:  1200px !important;
+    max-width: 1200px !important;
+    overflow:auto !important;
+   } 
+  .ui-tooltip-content {
+                background-color: #ffff00;
+                width: 800px;
+                }
+   .ui-tooltip {
+    border: 1px solid #ccc;
+    box-shadow: 0 0 10px 0 #ddd;
+    -moz-box-shadow: 0 0 10px 0 #ddd;
+    -webkit-box-shadow: 0 0 10px 0 #ddd;
+    color: #666;
+    background: #f8f8f8;
+    }
+    .style {border:1px;
+             padding:10px;
+             font-size:14px;
+             color:#2F4F4F;
+          }
+    .tab {border:1px;
+             padding:10px;
+             font-size:14px;}
+  </style>
+
+  <script src="https://js.arcgis.com/3.15/"></script>
+  <script src="http://code.jquery.com/jquery-1.11.3.min.js"></script>
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+  <script src="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>  
+  
+  <script>
+      var readstr;
+      $().ready(function() {    
+      readstr = function(){
+          var comm = $.trim($('comment').val());
+          console.log(comm);
+      }
+      })    
+  </script>
+  
+  
+  <script>
+    var map;
+    var tb;
+    var x, y, lon, lat;
+    var astr;
+    require([
+      "esri/map","dojo/dom","dojo/on","dijit/registry","esri/layers/FeatureLayer","esri/layers/ArcGISDynamicMapServiceLayer", "esri/dijit/BasemapToggle",
+      "esri/dijit/Legend", "esri/symbols/SimpleMarkerSymbol", "esri/tasks/query", "esri/tasks/QueryTask","esri/graphic", "esri/geometry/webMercatorUtils",
+      "esri/toolbars/draw", "esri/graphic", "esri/geometry/Circle", "esri/symbols/SimpleLineSymbol","esri/Color","esri/symbols/SimpleFillSymbol",
+      "esri/InfoTemplate", "esri/symbols/CartographicLineSymbol",
+      "dojo/_base/array", "dojo/parser",
+      
+      "dijit/layout/BorderContainer", "dijit/layout/AccordionContainer","dijit/layout/ContentPane", "dijit/form/Button",
+      "dijit/layout/TabContainer", "dojo/domReady!","dojox/layout/ContentPane"
+    ], function(
+      Map, dom, on, registry, FeatureLayer, ArcGISDynamicMapServiceLayer, BasemapToggle, Legend, SimpleMarkerSymbol, Query, QueryTask, Graphic, webMercatorUtils, 
+      Draw, Graphic, Circle, SimpleLineSymbol, Color, SimpleFillSymbol, InfoTemplate, CartographicLineSymbol,
+      arrayUtils, parser
+    ) {
+      parser.parse();
+
+      map = new Map("map", {
+        basemap:"topo",
+        center: [-112.45, 42.86],
+        zoom: 13
+      });
+      
+      var toggle = new BasemapToggle({
+        map: map,
+        basemap: "hybrid"
+      }, "BasemapToggle");
+      toggle.startup();
+      
+      var zoning = new ArcGISDynamicMapServiceLayer("http://miles.giscenter.isu.edu/arcgis/rest/services/InfrastructureSystems/Bannock_Zoning/MapServer");
+          zoning.setOpacity(0.9);  
+      
+      var green = new ArcGISDynamicMapServiceLayer("http://miles.giscenter.isu.edu/arcgis/rest/services/InfrastructureSystems/Pocatello_greenway/MapServer");
+          green.setOpacity(0.8);
+      var history = new ArcGISDynamicMapServiceLayer("http://miles.giscenter.isu.edu/arcgis/rest/services/NaturalSystems/history_portneuf/MapServer");
+          history.setOpacity(0.9);
+      var pubproperty = new ArcGISDynamicMapServiceLayer("http://miles.giscenter.isu.edu/arcgis/rest/services/InfrastructureSystems/Bannock_PublicProperty/MapServer");
+          pubproperty.setOpacity(0.6);
+      var parcel = new ArcGISDynamicMapServiceLayer("http://miles.giscenter.isu.edu/arcgis/rest/services/EconomicSystems/BannockCntyParcel/MapServer"); 
+          parcel.setOpacity(0.6);     
+      var bike = new ArcGISDynamicMapServiceLayer("http://miles.giscenter.isu.edu/arcgis/rest/services/MILES/Pocatello_Mountain_Bike_Trials/MapServer");
+          bike.setOpacity(0.9);
+      var river = new ArcGISDynamicMapServiceLayer("http://miles.giscenter.isu.edu/arcgis/rest/services/NaturalSystems/Portneuf_river/MapServer");
+
+      var flood = new ArcGISDynamicMapServiceLayer("http://miles.giscenter.isu.edu/arcgis/rest/services/NaturalSystems/Pocatello_floodzones/MapServer");
+          flood.setOpacity(0.4);
+      
+      var access = new ArcGISDynamicMapServiceLayer("http://miles.giscenter.isu.edu/arcgis/rest/services/InfrastructureSystems/Portneuf_Access/MapServer");
+      var mask = new ArcGISDynamicMapServiceLayer("http://miles.giscenter.isu.edu/arcgis/rest/services/gp_service/Portneuf_Mask/MapServer");
+          mask.setOpacity(0.9); 
+        
+        var content = "<b>Area:</b>${NAMELSAD}" ;  
+        var infoTemplate = new InfoTemplate("${FIELD_NAME}", content);  
+        var census = new FeatureLayer("http://miles.giscenter.isu.edu/arcgis/rest/services/InfrastructureSystems/Bannock_neighborhoods/FeatureServer/0", {
+        mode: FeatureLayer.MODE_ONDEMAND,
+//        infoTemplate: infoTemplate,
+        outFields:["Neighborho"]
+        });
+        census.setOpacity(0.3);
+
+        map.addLayers([pubproperty,green,access,history,river,census]);
+        map.addLayer(mask);
+        
+       on(dom.byId("zoning"),"click",addlayer);  
+       on(dom.byId("parcel"),"click",addlayer); 
+       on(dom.byId("bike"),"click", addbike);
+       on(dom.byId("flood"),"click",addflood);
+
+      function addbike(){
+          if (document.getElementById('bike').checked)  {             
+                  map.addLayer(bike);
+                } else{
+                  map.removeLayer(bike);
+              }  
+      }
+     function addflood(){
+          if (document.getElementById('flood').checked)  {             
+                  map.addLayer(flood);
+                } else{
+                  map.removeLayer(flood);
+              }  
+      }
+
+      function addlayer(){ 
+         if (document.getElementById('zoning').checked)  {             
+                  map.addLayer(zoning);
+                } else{
+                  map.removeLayer(zoning);
+              } 
+        if (document.getElementById('parcel').checked)  {     
+                  map.addLayer(parcel);
+                } else{
+                  map.removeLayer(parcel);
+              }  
+        }   
+
+// add circle to map for query  
+      var selectionToolbar;   
+      map.on("load", initSelectToolbar);
+      var fieldsSelectionSymbol =  new SimpleFillSymbol(SimpleFillSymbol.STYLE_SOLID,
+                                   new SimpleLineSymbol(SimpleLineSymbol.STYLE_DASHDOT,
+                                   new Color([255, 0, 0]), 2), new Color([255, 255, 0, 0.5]));
+                                   
+      var lineSymbol = new CartographicLineSymbol(
+          CartographicLineSymbol.STYLE_SOLID,
+          new Color([255,0,0]), 10, 
+          CartographicLineSymbol.CAP_ROUND,
+          CartographicLineSymbol.JOIN_MITER, 5
+        );
+      
+      on(dom.byId("area"), "click", function () {
+          selectionToolbar.activate(Draw.EXTENT);
+//          selectionToolbar.activate(esri.toolbars.Draw.MULTI_POINT);
+        });
+      
+      on(dom.byId("clear"), "click", function () {
+          census.clearSelection();
+        }); 
+        
+ //     census.setSelectionSymbol(fieldsSelectionSymbol);
+        census.setSelectionSymbol(lineSymbol);
+ //     census.on("selection-complete", getarea);
+      
+      function initSelectToolbar (event) {
+          selectionToolbar = new Draw(event.map);
+//          selectionToolbar.activate(esri.toolbars.Draw.FREEHAND_POLYGON);
+//          selectionToolbar = new Draw(event.map);
+          var selectQuery = new Query();        
+          on(selectionToolbar, "DrawEnd", function (geometry) {
+            selectionToolbar.deactivate();
+            selectQuery.geometry = geometry;
+            census.selectFeatures(selectQuery,
+              census.SELECTION_NEW, function(results){
+                  astr = areastr(results); 
+              });
+          });
+        }   
+        
+        function areastr(features){
+             var str = " ";
+             for (var x = 0; x < features.length; x++) {
+               str = str + (features[x].attributes["Neighborho"])+":";
+              }
+             return str;
+        }   
+
+      map.on("Click", myfunction);
+      
+      function myfunction(event){
+          map.graphics.clear();
+          
+          var pts = event.mapPoint;
+          var symbol = new SimpleMarkerSymbol({
+              "color": [225,0,0,65],
+              "style":"esriSMSCircle",
+              "size": 12
+          });
+          var graphic = new Graphic(pts, symbol);
+          map.graphics.add(graphic);
+          
+//          var mp = esri.geometry.webmercatorToGeographic(event.mapPoint);
+          x = event.mapPoint.x;
+          y = event.mapPoint.y;
+ 
+          var lonlat = webMercatorUtils.xyToLngLat(x,y,true) ;   
+          lon = lonlat[0];  
+          lat = lonlat[1];       
+
+          var answer = confirm ("This is the location you want to comment?");
+          if (answer){
+              map.centerAndZoom([lon,lat],13);                        
+          }
+          else{
+              map.graphics.clear();
+          }
+          }  
+            
+    });
+    
+    var count = 0;
+
+    var geojson = {};
+    geojson["type"]="FeatureCollection";
+    geojson["features"] = [];
+
+    function getstr(){
+        count = count+1 ;
+        var text = document.getElementById("comment").value;
+        var commtp = $("#commtype").val();
+//        var area = $("#area").val();
+        var area = astr;
+//        document.getElementById("disp").innerHTML="<b>Thank you for your input! You have just submitted the following comment:</b></br>"+ text+" at location ("+lon +", "+ lat +") for " + commtp;
+
+// check if the location is selected.
+    if (lon == null|lat == null)  {
+        alert ("Did you select a location for comment yet?");
+    } else if (lon != null && lat != null) {
+//  write to a geojson file
+     var data ={"type":"Feature","id":count,"geometry":{"type":"Point","coordinates":[lon, lat]},
+     "properties":{"Time": Date(), "longitude":lon, "latitude":lat,"Comment_Type":commtp,"Your_Area":area,"Comment":text}}
+
+//        fs.writeFile('./data.json',JSON.stringfy(data))
+//        var blob = new Blob([json], {type: "application/json"});
+//        var url  = URL.createObjectURL(blob);
+
+//        var a = document.createElement('a');
+//        a.download    = "backup.json";
+//        a.href        = url;
+//        a.textContent = "Download backup.json";
+
+//        document.getElementById('link').appendChild(a);
+//        var extended = $.extend(gjson,json);
+       geojson['features'].push(data);
+        console.log(count, JSON.stringify(geojson));
+        
+        $.ajax({
+            type:"GET",
+            dataType: 'json',
+            async: false,
+            url: './save_json.php',
+            data: {data:JSON.stringify(geojson)},
+            success: function () {alert("Thanks!"); },
+            failure: function() {alert("Error!");}
+        });
+      document.getElementById("disp").innerHTML="<b>Thank you for your input! You have just submitted the following comment:</b></br>"+ text+" at location ("+lon +", "+ lat +") for " + commtp;               
+    }
+    
+    
+   }
+   
+   $(function() {
+     // Handler for .ready() called.
+     $('.popovers-to-be-activated').popover();
+   });
+     
+   $(document).ready(function(){
+    $('[data-toggle="tooltip"]').tooltip(); 
+   });
+  
+  </script>
+
+
+</head>
+
+<body class="claro">        
+
+<div class="style2" id="content"
+     data-dojo-type="dijit/layout/BorderContainer"
+     data-dojo-props="design:'headline', gutters:true"
+     style="width: 100%; height: 100%; margin: 0;">
+
+  <div class="style" id="rightPane"
+       data-dojo-type="dijit/layout/ContentPane"
+       data-dojo-props="region:'right'">
+
+    <div data-dojo-type="dijit/layout/TabContainer">
+      <div class="tab" data-dojo-type="dijit/layout/ContentPane" id="layerPane"
+           data-dojo-props="title:'Map Legend'">
+        <div id="layerDiv">
+         <script type="text/javascript">
+           $(function(){
+           $('#lyrTree').find('span').click(function(e){
+           $(this).parent().children('ul').toggle();
+           });
+          });
+          </script> 
+           <br>
+           <b>Layers displayed:</b><br>
+           <ul class="list" id="lyrTree"> 
+                        
+               <li><span>Property Ownership</span>                   
+                   <ul><img src="property.png"  style="width:90px;height:50px;"></ul>                
+               </li>
+ 
+               <li><span>Portneuf Greenway</span>
+                  <ul><img src="greenway.png"  style="width:220px;height:30px;"></ul>
+               </li>
+
+               <li><span>Portneuf River Circa 1900 Map</span>
+                  <ul><img src="history2.png"  style="width:115px;height:70px;"></ul>
+               </li>
+
+               <li><span>Portneuf River</span>
+                  <ul>&nbsp;<img src="river.png"  style="width:30px;height:15px;"></ul>
+               </li>
+               <li><span>Existing River Access</span>
+                  <ul>&nbsp;<img src="riveraccess2.png"  style="width:150px;height:30px;"></ul> 
+               </li>                    
+           </ul>
+           <br>
+           
+          <b>Additional Layers: Click to display</b><br> 
+          <input type="checkbox" value="zoning" id="zoning">Pocatello Zoning Map<br>
+          &nbsp;&nbsp;&nbsp;&nbsp;<img src="zoning.png"  style="width:350px;height:380px;"><br>
+          <input type="checkbox" value="parcel" id="parcel">Bannock County Parcel Map<br> 
+          &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<img src="parcel.png"  style="width:35px;height:28px;"><br>
+          <input type="checkbox" value="bike" id="bike">City Creek Trials<br>
+          &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<img src="bike_trailhead.png"  style="width:120px;height:20px;"><br>
+          &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<img src="bike_trail.png"  style="width:120px;height:110px;"><br>
+          <input type="checkbox" value="flood" id="flood">Flood Potential<br>
+          &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<img src="flood.png"  style="width:280px;height:70px;">
+          
+<!--          <input type="checkbox" value="history" id="history">Portneuf River Circa 1900 Map<br>
+          &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<img src="history2.png"  style="width:55px;height:35px;"><br>--></br>
+          
+          
+        </div>
+      </div>
+     
+      <div class="tab" data-dojo-type="dijit/layout/ContentPane"
+           data-dojo-props="title:'Comment', selected:true">
+           <br>
+           <b>FOLLOW THE STEPS BELOW TO SHARE YOUR IDEAS.</b><br><br>
+           <label><b>1.Click on the map to select a location.</b></label><br><br>
+           <label><b>2.Enter your comment.</b></label>
+           &nbsp;&nbsp;&nbsp;<textarea id="comment" data-toggle="tooltip" data-placement="right" title="Click in the textarea and start typing" style="white-space:pre-wrap; height:50px;width:300px"></textarea><br><br>
+           <label><b>3.How would you classify your comment?</b></label><br>
+           &nbsp;&nbsp;&nbsp;<select id="commtype">
+                <option style="font-size: 14px" value="River Access" > River Access <br>
+                <option style="font-size: 14px" value="Recreation" > Recreation <br>   
+                <option style="font-size: 14px" value="Transportation" > Transportation <br>
+                <option style="font-size: 14px" value="Water Quality" > Water Quality <br>
+                <option style="font-size: 14px" value="Habitat" > Habitat <br>
+                <option style="font-size: 14px" value="Water Amount" > Water Amount <br>   
+                <option style="font-size: 14px" value="Beautification" > Beautification <br>   
+                <option style="font-size: 14px" value="Other"> Other </option>
+           </select><br><br>
+           <label><b>4.What area are you from?</b></lable><br>
+               &nbsp;&nbsp;&nbsp;<button  id="area" data-toggle="tooltip" data-placement="right" title="Click the button first, then click on the map and drag over some distance and let go"> Draw a box on map</button>
+               &nbsp;&nbsp;&nbsp;&nbsp;<button  id="clear" data-toggle="tooltip" data-placement="right" title="Clear your selection"> Clear</button>           
+           <!--<select id="area">
+                <option style="background-color: #728FCE; font-family:'Times New Roman'; font-size: 16px" value="Census Block Group 1" > Census Block Group 1 <br></option>
+                <option style="background-color: #FFFFC2; font-family:'Times New Roman'; font-size: 16px" value="Census Block Group 2" > Census Block Group 2 <br></option>   
+                <option style="background-color: #E8ADAA; font-family:'Times New Roman'; font-size: 16px" value="Census Block Group 3" > Census Block Group 3 <br></option>
+                <option style="background-color: #FCDFFF; font-family:'Times New Roman'; font-size: 16px" value="Census Block Group 4" > Census Block Group 4 <br></option>
+                <option style="background-color: #7FFFD4; font-family:'Times New Roman'; font-size: 16px" value="Census Block Group 5" > Census Block Group 5 <br></option>
+          </select>-->
+          <br><br>
+
+          <label><b>5.</b></label><button id="submit" onclick="getstr()"><b>Submit</b></button><br><br>
+              
+          <label><b>6.<a href="hiscomment.html" > Review </a>all comments from community.</b></label><br><br>
+          
+          <p id="disp"></p>         
+          
+      </div>
+      
+    </div>
+  </div>
+  <div id="map"
+       data-dojo-type="dijit/layout/ContentPane"
+       data-dojo-props="region:'center'"
+       style="overflow:hidden;">
+       <div id="BasemapToggle"></div>
+       <div style="position:absolute; left:70px; top:15px; z-Index:999;" id="mileslogo"><img src="miles_logo.png"  style="width:140px;height:40px;"></div>
+	   <div style="position:absolute; left:210px; top:15px; z-Index:999;" id="isulogo"><img src="ISU_logo.png"  style="width:140px;height:40px;"></div>
+	   <div style="position:absolute; left:15px; top:100px; z-Index:999;" id="tip">
+	       <a href="#" role="button" 
+           class="btn popovers-to-be-activated" 
+           title="<b>Instructions for using the map</b>" 
+           data-content="<b>Zoom</b>: Click the plus/minus to zoom in or zoom out.<br/><b>Pan</b>: Click and drag to the direction you wish to move the map. <br/> <b>More maps</b>: Go to 'Map Legend' tab and check the additional maps you would like to view. Uncheck for removing maps.<br/> <b>CLICK</b> question mark again to close info box." 
+           data-html="true"
+           data-original-title="A Title">
+          <img src="question.png"  style="width:40px;height:40px;"></a></div>
+<!--	   <div style="position:absolute; left:15px; top:100px; z-Index:999;" id="tip"><img src="question.png"  style="width:40px;height:40px;"></div>-->
+	   <div style="position:absolute; left:15px; top:470px; z-Index:999;" id="citylogo"><img src="pocatello_logo.png"  style="width:100px;height:40px;"></div>
+       
+  </div>
+</div>
+
+<div id="link"></div>
+</body>
+
+</html>

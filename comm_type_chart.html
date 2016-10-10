@@ -1,0 +1,105 @@
+<script src="http://code.jquery.com/jquery-1.6.3.min.js"></script>
+<script src="http://code.highcharts.com/highcharts.js"></script>
+<script src="http://code.highcharts.com/modules/exporting.js"></script>
+
+<!--<button id="btnGET">reload</button>-->
+<div id="container" style="min-width: 400px; height: 400px; margin: 0 auto"></div>
+<h3 align="center">Word Cloud of the Comments</h3>
+<div id="word" style="min-width: 400px; height: 400px; margin: 0 auto; text-align: center;"">
+<!--<img src="wordcloud.png" style="width:550px;height:300px;">-->
+<iframe src="http://miles.giscenter.isu.edu/PokeyMap/word_chart.html" width="900" height="600" frameBorder="0" align="center"></iframe>
+
+</div>
+<!--<input type="button" id="btnPieChart" value="Pie Chart" />-->
+
+<script>
+var Ntp;
+var tp;
+function processData(allText) {	
+	var result = allText.split(",");
+	var Nresult = [Number(result[0]),Number(result[1]),Number(result[2]),Number(result[3]),Number(result[4]),Number(result[5]),Number(result[6]),Number(result[7])];
+	return Nresult;
+}
+
+function set_exists(x){
+	exists = x;}
+</script>
+
+<script>
+
+ $(function () {
+
+    $(document).ready(function () {
+	
+		// load csv file on server
+//		$("#btnGET").click(function(){
+	  var tp = $.ajax({
+	           async: false,
+			   type: "GET",
+               url: "http://miles.giscenter.isu.edu/PokeyMap/data/commtype.txt", 
+			   dataType: "text",
+			   success: function (data){}
+			}).responseText;
+//			})
+		console.log(tp);
+	    Ntp = processData(tp);
+        // Build the chart
+        $('#container').highcharts({
+            chart: {
+                plotBackgroundColor: null,
+                plotBorderWidth: null,
+                plotShadow: false,
+                type: 'pie'
+            },
+            title: {
+                text: 'Portneuf River Vision Study Comment Type'
+            },
+            tooltip: {
+                pointFormat: '{series.name}: <b>{point.percentage:.1f}%</b>'
+            },
+            plotOptions: {
+                pie: {
+                    allowPointSelect: true,
+                    cursor: 'pointer',
+                    dataLabels: {
+                        enabled: false
+                    },
+                    showInLegend: true
+                }
+            },
+            series: [{
+                name: 'Percentage',
+                colorByPoint: true,
+                data: [{
+                    name: 'River Access',
+                    y: Ntp[0],
+                }, {
+                    name: 'Recreation',
+                    y: Ntp[1],
+                    sliced: true,
+                    selected: true
+                }, {
+                    name: 'Transportation',
+                    y: Ntp[2]
+                }, {
+                    name: 'Water Quality',
+                    y: Ntp[3]
+                }, {
+                    name: 'Habitat',
+                    y: Ntp[4]
+                }, {
+                    name: 'Water Amount',
+                    y: Ntp[5]
+                },{
+                    name: 'Beautification',
+                    y: Ntp[6]
+                },{
+                    name: 'Other',
+                    y: Ntp[7]
+                }]
+            }]
+        });
+    });
+});
+
+</script>
