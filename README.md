@@ -1,5 +1,5 @@
 # MILES
-MILES Online Comment Tool is a web-based mapping application with a geo-tagged commentting tool to support public participation in collaborative planning. It includes GeoJSON data format, asynchronous communication between web browser and server, PHP and Python script on server. The server receives Http request from web browser and generated GeoJSON data file on server. On server python script would combine all GeoJSON data files for displaying and statistics analyzing.
+MILES Online Comment Tool (MOCT) is a web-based mapping application with a geo-tagged commentting tool to support public participation in collaborative planning. It includes GeoJSON data format, asynchronous communication between web browser and server, PHP and Python script on server. The server receives Http request from web browser and generated GeoJSON data file on server. On server python script would combine all GeoJSON data files for displaying and statistics analyzing.
 
 The following is the description of each individual file.
 
